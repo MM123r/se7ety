@@ -1,9 +1,7 @@
-import 'dart:developer';
 import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -16,14 +14,14 @@ import 'package:se7ety_123/feature/auht/presentation/bloc/auth_bloc.dart';
 import 'package:se7ety_123/feature/auht/presentation/bloc/auth_event.dart';
 import 'package:se7ety_123/feature/auht/presentation/bloc/auth_state.dart';
 
-class DoctorRegisteration extends StatefulWidget {
-  const DoctorRegisteration({super.key});
+class DoctorRegistrationView extends StatefulWidget {
+  const DoctorRegistrationView({super.key});
 
   @override
-  _DoctorRegisterationState createState() => _DoctorRegisterationState();
+  _DoctorRegistrationViewState createState() => _DoctorRegistrationViewState();
 }
 
-class _DoctorRegisterationState extends State<DoctorRegisteration> {
+class _DoctorRegistrationViewState extends State<DoctorRegistrationView> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _bio = TextEditingController();
   final TextEditingController _address = TextEditingController();
@@ -37,35 +35,39 @@ class _DoctorRegisterationState extends State<DoctorRegisteration> {
 
   @override
   void initState() {
-    getUser();
     super.initState();
+    _getUser();
   }
 
+  String? _imagePath;
   File? file;
   String? profileUrl;
 
   String? userID;
 
-  getUser() {
-    userID = FirebaseAuth.instance.currentUser?.uid;
+  Future<void> _getUser() async {
+    userID = FirebaseAuth.instance.currentUser!.uid;
   }
 
-  Future<String> uploadImageToStorage(File image) async {
+  Future<String> uploadImageToFireStore(File image) async {
     Reference ref =
         FirebaseStorage.instanceFor(bucket: 'gs://se7ety-119.appspot.com')
             .ref()
             .child('doctors/$userID');
     SettableMetadata metadata = SettableMetadata(contentType: 'image/jpeg');
     await ref.putFile(image, metadata);
-    return await ref.getDownloadURL();
+    String url = await ref.getDownloadURL();
+    return url;
   }
 
   Future<void> _pickImage() async {
+    _getUser();
     final pickedFile =
         await ImagePicker().pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
       setState(() {
+        _imagePath = pickedFile.path;
         file = File(pickedFile.path);
       });
     }
@@ -76,18 +78,16 @@ class _DoctorRegisterationState extends State<DoctorRegisteration> {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is DoctorRegistionSuccessState) {
-          log('success');
+          Navigator.pop(context);
         } else if (state is AuhtErrorState) {
           Navigator.pop(context);
-          showErrorDialog(context, "حدث خطاء");
+          showErrorDialog(context, state.message);
         } else if (state is DoctorRegistionLoadingState) {
           showLoadingDialog(context);
         }
       },
       child: Scaffold(
-        backgroundColor: AppColors.white,
         appBar: AppBar(
-          backgroundColor: AppColors.white,
           title: const Text('إكمال عملية التسجيل'),
         ),
         body: SingleChildScrollView(
@@ -104,12 +104,12 @@ class _DoctorRegisterationState extends State<DoctorRegisteration> {
                         children: [
                           CircleAvatar(
                             radius: 50,
-                            backgroundColor: AppColors.white,
+                            // backgroundColor: AppColors.lightBg,
                             child: CircleAvatar(
                               radius: 60,
-                              backgroundColor: AppColors.white,
-                              backgroundImage: (file != null)
-                                  ? FileImage(file!) as ImageProvider
+                              backgroundImage: (_imagePath != null)
+                                  ? FileImage(File(_imagePath!))
+                                      as ImageProvider
                                   : const AssetImage('assets/images/doc.png'),
                             ),
                           ),
@@ -124,6 +124,7 @@ class _DoctorRegisterationState extends State<DoctorRegisteration> {
                               child: const Icon(
                                 Icons.camera_alt_rounded,
                                 size: 20,
+                                // color: AppColors.color1,
                               ),
                             ),
                           ),
@@ -180,17 +181,10 @@ class _DoctorRegisterationState extends State<DoctorRegisteration> {
                         keyboardType: TextInputType.text,
                         maxLines: 5,
                         controller: _bio,
-                        style: const TextStyle(color: AppColors.black),
+                        style: TextStyle(color: AppColors.black),
                         decoration: const InputDecoration(
-                          hintText:
-                              'سجل المعلومات الطبية العامة مثل تعليمك الأكاديمي وخبراتك السابقة...',
-                          filled: true,
-                          fillColor: AppColors.accentColor,
-                          border: OutlineInputBorder(
-                              borderRadius:
-                                  BorderRadius.all(Radius.circular(25.0)),
-                              borderSide: BorderSide.none),
-                        ),
+                            hintText:
+                                'سجل المعلومات الطبية العامة مثل تعليمك الأكاديمي وخبراتك السابقة...'),
                         validator: (value) {
                           if (value!.isEmpty) {
                             return 'من فضلك ادخل النبذة التعريفية';
@@ -217,15 +211,9 @@ class _DoctorRegisterationState extends State<DoctorRegisteration> {
                       TextFormField(
                         keyboardType: TextInputType.text,
                         controller: _address,
-                        style: const TextStyle(color: AppColors.black),
+                        style: TextStyle(color: AppColors.black),
                         decoration: const InputDecoration(
                           hintText: '5 شارع مصدق - الدقي - الجيزة',
-                          filled: true,
-                          fillColor: AppColors.accentColor,
-                          border: OutlineInputBorder(
-                              borderRadius:
-                                  BorderRadius.all(Radius.circular(25.0)),
-                              borderSide: BorderSide.none),
                         ),
                         validator: (value) {
                           if (value!.isEmpty) {
@@ -276,17 +264,11 @@ class _DoctorRegisterationState extends State<DoctorRegisteration> {
                                     onPressed: () async {
                                       await showStartTimePicker();
                                     },
-                                    icon: const Icon(
+                                    icon: Icon(
                                       Icons.watch_later_outlined,
                                       color: AppColors.color1,
                                     )),
                                 hintText: _startTime,
-                                filled: true,
-                                fillColor: AppColors.accentColor,
-                                border: const OutlineInputBorder(
-                                    borderRadius:
-                                        BorderRadius.all(Radius.circular(25.0)),
-                                    borderSide: BorderSide.none),
                               ),
                             ),
                           ),
@@ -303,17 +285,11 @@ class _DoctorRegisterationState extends State<DoctorRegisteration> {
                                     onPressed: () async {
                                       await showEndTimePicker();
                                     },
-                                    icon: const Icon(
+                                    icon: Icon(
                                       Icons.watch_later_outlined,
                                       color: AppColors.color1,
                                     )),
                                 hintText: _endTime,
-                                filled: true,
-                                fillColor: AppColors.accentColor,
-                                border: const OutlineInputBorder(
-                                    borderRadius:
-                                        BorderRadius.all(Radius.circular(25.0)),
-                                    borderSide: BorderSide.none),
                               ),
                             ),
                           ),
@@ -331,21 +307,11 @@ class _DoctorRegisterationState extends State<DoctorRegisteration> {
                         ),
                       ),
                       TextFormField(
-                        keyboardType: TextInputType.number,
+                        keyboardType: TextInputType.text,
                         controller: _phone1,
-                        style: const TextStyle(color: AppColors.black),
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                          LengthLimitingTextInputFormatter(11),
-                        ],
+                        style: TextStyle(color: AppColors.black),
                         decoration: const InputDecoration(
                           hintText: '+20xxxxxxxxxx',
-                          filled: true,
-                          fillColor: AppColors.accentColor,
-                          border: OutlineInputBorder(
-                              borderRadius:
-                                  BorderRadius.all(Radius.circular(25.0)),
-                              borderSide: BorderSide.none),
                         ),
                         validator: (value) {
                           if (value!.isEmpty) {
@@ -367,21 +333,11 @@ class _DoctorRegisterationState extends State<DoctorRegisteration> {
                         ),
                       ),
                       TextFormField(
-                        keyboardType: TextInputType.number,
+                        keyboardType: TextInputType.text,
                         controller: _phone2,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                          LengthLimitingTextInputFormatter(11),
-                        ],
-                        style: const TextStyle(color: AppColors.black),
+                        style: TextStyle(color: AppColors.black),
                         decoration: const InputDecoration(
                           hintText: '+20xxxxxxxxxx',
-                          filled: true,
-                          fillColor: AppColors.accentColor,
-                          border: OutlineInputBorder(
-                              borderRadius:
-                                  BorderRadius.all(Radius.circular(25.0)),
-                              borderSide: BorderSide.none),
                         ),
                       ),
                     ],
@@ -400,11 +356,11 @@ class _DoctorRegisterationState extends State<DoctorRegisteration> {
             child: ElevatedButton(
               onPressed: () async {
                 if (_formKey.currentState!.validate() && file != null) {
-                  profileUrl = await uploadImageToStorage(file!);
-                  context.read<AuthBloc>().add(UpdateDoctorDataEvent(
+                  profileUrl = await uploadImageToFireStore(file!);
+                  context.read<AuthBloc>().add(UpdateDoctorDataEvent(//DoctorRegistrationEvent
                           doctorModel: DoctorModel(
-                        uid: userID ?? '',
-                        image: profileUrl ?? '',
+                        uid: userID,
+                        image: profileUrl,
                         phone1: _phone1.text,
                         phone2: _phone2.text,
                         address: _address.text,
@@ -416,7 +372,7 @@ class _DoctorRegisterationState extends State<DoctorRegisteration> {
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('من فضلك قم بتحميل صورة الملف الشخصي'),
+                      content: Text('من فضلك قم بتحميل صورة العيادة'),
                     ),
                   );
                 }
@@ -448,6 +404,7 @@ class _DoctorRegisterationState extends State<DoctorRegisteration> {
     if (datePicked != null) {
       setState(() {
         _startTime = datePicked.hour.toString();
+        print(_startTime);
       });
     }
   }

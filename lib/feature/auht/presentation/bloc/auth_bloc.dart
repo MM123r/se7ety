@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -16,14 +18,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   Future<void> login(LoginEvent event, Emitter<AuthState> emit) async {
     emit(LoginLoadingState());
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
+      var credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: event.email, password: event.password);
 
-      emit(LoginSuccessState());
+      credential.user?.photoURL;
+
+      emit(LoginSuccessState(userType: credential.user?.photoURL ?? ""));
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found') {
         emit(AuhtErrorState(message: "المستخدم غير موجود"));
-        ;
       } else if (e.code == 'wrong-password') {
         emit(AuhtErrorState(message: "الباسورد ضعيف"));
       } else {
@@ -48,7 +51,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
       //
       User? user = credential.user;
-      user?.updateDisplayName(event.name);
+      await user?.updateDisplayName(event.name);
+
+      // use photo as a user role
+      await user?.updatePhotoURL(event.userType.toString());
 
       // store on firestore
       if (event.userType == UserType.doctor) {
@@ -97,12 +103,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       UpdateDoctorDataEvent event, Emitter<AuthState> emit) async {
     emit(DoctorRegistionLoadingState());
     try {
+      log("-------1-----");
       await FirebaseFirestore.instance
           .collection("doctors")
           .doc(event.doctorModel.uid)
           .update(event.doctorModel.toJson());
+          log("-------2-----");
       emit(DoctorRegistionSuccessState());
     } catch (e) {
+      log("-------3-----");
       emit(AuhtErrorState(message: "حدث خطا ما يرجي محاوله مرة اخري"));
     }
   }

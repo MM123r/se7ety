@@ -16,6 +16,7 @@ import 'package:se7ety_123/feature/auht/presentation/bloc/auth_event.dart';
 import 'package:se7ety_123/feature/auht/presentation/bloc/auth_state.dart';
 import 'package:se7ety_123/feature/auht/presentation/page/doctor_registeration.dart';
 import 'package:se7ety_123/feature/auht/presentation/page/login_view.dart';
+import 'package:se7ety_123/feature/patient/nav_bar.dart';
 
 class RegisterView extends StatefulWidget {
   const RegisterView({super.key, required this.userType});
@@ -52,10 +53,10 @@ class _RegisterViewState extends State<RegisterView> {
           if (state is RegisterSuccessState) {
             log("Success");
             if (widget.userType == UserType.doctor) {
-              pushAndRemoveUntil(context,const DoctorRegisteration());
+              pushAndRemoveUntil(context,const DoctorRegistrationView());
             }
             else{
-              // pushAndRemoveUntil(context,const homepage());
+               pushAndRemoveUntil(context,const PatientNavBarWidget());
             }
           } else if (state is RegisterLoadingState) {
             showLoadingDialog(context);

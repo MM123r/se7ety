@@ -15,6 +15,9 @@ import 'package:se7ety_123/feature/auht/presentation/bloc/auth_bloc.dart';
 import 'package:se7ety_123/feature/auht/presentation/bloc/auth_event.dart';
 import 'package:se7ety_123/feature/auht/presentation/bloc/auth_state.dart';
 import 'package:se7ety_123/feature/auht/presentation/page/register_view.dart';
+import 'package:se7ety_123/feature/doctor/profile/page/profile_view.dart';
+import 'package:se7ety_123/feature/patient/home/presentation/page/home_view.dart';
+import 'package:se7ety_123/feature/patient/nav_bar.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key, required this.userType});
@@ -50,8 +53,13 @@ class _LoginViewState extends State<LoginView> {
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is LoginSuccessState) {
-            Navigator.pop(context);
-            log("Success");
+            //log("Success");
+            if (state.userType == UserType.doctor.toString()) {
+              // pushAndRemoveUntil(context, const ());
+            }//DoctorNavBarWidget
+             else {
+              pushAndRemoveUntil(context, const PatientNavBarWidget());
+            }
           } else if (state is LoginLoadingState) {
             showLoadingDialog(context);
           } else if (state is AuhtErrorState) {
@@ -167,10 +175,9 @@ class _LoginViewState extends State<LoginView> {
                       onPressed: () async {
                         if (_formKey.currentState!.validate()) {
                           context.read<AuthBloc>().add(LoginEvent(
-                              email: _emailController.text,
-                              password: _passwordController.text,
-                              userType: widget.userType.toString(),
-
+                                email: _emailController.text,
+                                password: _passwordController.text,
+                                userType: widget.userType.toString(),
                               ));
                         }
                       },
