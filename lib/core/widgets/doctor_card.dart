@@ -1,9 +1,10 @@
+// core/widgets/doctor_card.dart
 import 'package:flutter/material.dart';
 import 'package:se7ety_123/core/constants/navigation.dart';
-import 'package:se7ety_123/core/utils/colors.dart';
 import 'package:se7ety_123/core/utils/text_style.dart';
 import 'package:se7ety_123/feature/auht/data/doctor_model.dart';
-import 'package:se7ety_123/feature/patient/search/page/doctor_profile_view.dart';
+import 'package:se7ety_123/feature/patient/search/views/doctor_profile_home.dart';
+
 
 class DoctorCard extends StatelessWidget {
   const DoctorCard({
@@ -35,7 +36,11 @@ class DoctorCard extends StatelessWidget {
       child: InkWell(
         onTap: () {
           if (isClickable) {
-            pushTO(context, DoctorProfile(doctorModel: doctor));
+            pushTO(
+                context,
+                DoctorHome(
+                  doctor: doctor,
+                ));
           }
         },
         child: Row(
@@ -47,13 +52,13 @@ class DoctorCard extends StatelessWidget {
                 height: 55,
                 width: 55,
                 decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(15),
-                    color: AppColors.white),
+                  borderRadius: BorderRadius.circular(15),
+                ),
                 child: Image.network(
                   doctor.image ?? '',
                   height: 50,
                   width: 50,
-                  fit: BoxFit.contain,
+                  fit: BoxFit.cover,
                 ),
               ),
             ),

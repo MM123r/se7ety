@@ -1,30 +1,31 @@
-class AuthState {}
+// feature/auth/login/presentation/bloc/auth_state.dart
+part of 'auth_bloc.dart';
 
-// initail
-class AuthInitial extends AuthState {}
+@immutable
+sealed class AuthState {}
 
-// Register
-class RegisterLoadingState extends AuthState {}
+final class AuthInitial extends AuthState {}
 
-class RegisterSuccessState extends AuthState {}
+//register
+class RegisterLoadingstate extends AuthState {}
 
-// Login
-class LoginLoadingState extends AuthState {}
+class RegisterSuccessstate extends AuthState {}
 
-class LoginSuccessState extends AuthState {
+//login
+class LoginLoadingstate extends AuthState {}
+
+class LoginSuccessstate extends AuthState {
   final String userType;
-
-  LoginSuccessState({required this.userType});
+  LoginSuccessstate({required this.userType});
 }
 
-// Doctor Registion
-class DoctorRegistionLoadingState extends AuthState {}
+//update doctor profile
+class DoctorRegisterationLoadingstate extends AuthState {}
 
-class DoctorRegistionSuccessState extends AuthState {}
+class DoctorRegisterationSuccessstate extends AuthState {}
 
-// Error 
-class AuhtErrorState extends AuthState {
-  final String message;
-
-  AuhtErrorState({required this.message});
+//error
+class AuthErrorState extends AuthState {
+  final String error;
+  AuthErrorState({required this.error});
 }

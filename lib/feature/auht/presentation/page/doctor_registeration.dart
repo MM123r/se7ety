@@ -1,27 +1,32 @@
+// feature/auth/login/presentation/view/doctor_register_view.dart
 import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:se7ety_123/core/constants/navigation.dart';
 import 'package:se7ety_123/core/functions/dialogs.dart';
 import 'package:se7ety_123/core/utils/colors.dart';
-import 'package:se7ety_123/core/utils/text_style.dart';
 import 'package:se7ety_123/feature/auht/data/doctor_model.dart';
-import 'package:se7ety_123/feature/auht/data/specialization.dart';
+import 'package:se7ety_123/feature/auht/data/doctor_specialization_list.dart';
 import 'package:se7ety_123/feature/auht/presentation/bloc/auth_bloc.dart';
-import 'package:se7ety_123/feature/auht/presentation/bloc/auth_event.dart';
-import 'package:se7ety_123/feature/auht/presentation/bloc/auth_state.dart';
+import 'package:se7ety_123/feature/auht/presentation/widgets/doctor_container.dart';
+import 'package:se7ety_123/feature/auht/presentation/widgets/doctor_dropdownlist.dart';
+import 'package:se7ety_123/feature/auht/presentation/widgets/doctor_register_button.dart';
+import 'package:se7ety_123/feature/auht/presentation/widgets/doctor_text.dart';
+import 'package:se7ety_123/feature/doctor/presentation/profile/page/profile_view.dart';
 
-class DoctorRegistrationView extends StatefulWidget {
-  const DoctorRegistrationView({super.key});
+class DoctorRegisterView extends StatefulWidget {
+  const DoctorRegisterView({super.key});
 
   @override
-  _DoctorRegistrationViewState createState() => _DoctorRegistrationViewState();
+  State<DoctorRegisterView> createState() => _DoctorRegisterViewState();
 }
 
-class _DoctorRegistrationViewState extends State<DoctorRegistrationView> {
+class _DoctorRegisterViewState extends State<DoctorRegisterView> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _bio = TextEditingController();
   final TextEditingController _address = TextEditingController();
@@ -30,8 +35,8 @@ class _DoctorRegistrationViewState extends State<DoctorRegistrationView> {
   String _specialization = specialization[0];
 
   late String _startTime =
-      DateFormat('hh').format(DateTime(2023, 9, 7, 10, 00));
-  late String _endTime = DateFormat('hh').format(DateTime(2023, 9, 7, 22, 00));
+      DateFormat('hh').format(DateTime(2023, 9, 7, 12, 00));
+  late String _endTime = DateFormat('hh').format(DateTime(2023, 9, 7, 23, 00));
 
   @override
   void initState() {
@@ -39,17 +44,15 @@ class _DoctorRegistrationViewState extends State<DoctorRegistrationView> {
     _getUser();
   }
 
-  String? _imagePath;
   File? file;
   String? profileUrl;
-
   String? userID;
 
   Future<void> _getUser() async {
     userID = FirebaseAuth.instance.currentUser!.uid;
   }
 
-  Future<String> uploadImageToFireStore(File image) async {
+  Future<String> uploadImageToFirebaseStorage(File image) async {
     Reference ref =
         FirebaseStorage.instanceFor(bucket: 'gs://se7ety-119.appspot.com')
             .ref()
@@ -67,7 +70,6 @@ class _DoctorRegistrationViewState extends State<DoctorRegistrationView> {
 
     if (pickedFile != null) {
       setState(() {
-        _imagePath = pickedFile.path;
         file = File(pickedFile.path);
       });
     }
@@ -77,18 +79,23 @@ class _DoctorRegistrationViewState extends State<DoctorRegistrationView> {
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
-        if (state is DoctorRegistionSuccessState) {
+        if (state is DoctorRegisterationSuccessstate) {
           Navigator.pop(context);
-        } else if (state is AuhtErrorState) {
+          pushReplacement(context, DoctorProfile());
+        } else if (state is AuthErrorState) {
           Navigator.pop(context);
-          showErrorDialog(context, state.message);
-        } else if (state is DoctorRegistionLoadingState) {
+          showErrorDialog(context, state.error);
+        } else if (state is DoctorRegisterationLoadingstate) {
           showLoadingDialog(context);
         }
       },
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('إكمال عملية التسجيل'),
+          toolbarHeight: 70,
+          backgroundColor: AppColors.color1,
+          title: const Text('إكمال عملية التسجيل',
+              style: TextStyle(color: Colors.white)),
+          centerTitle: true,
         ),
         body: SingleChildScrollView(
           child: Padding(
@@ -102,15 +109,15 @@ class _DoctorRegistrationViewState extends State<DoctorRegistrationView> {
                       Stack(
                         alignment: Alignment.bottomRight,
                         children: [
+                          //-------------------------------------------upload image
                           CircleAvatar(
                             radius: 50,
-                            // backgroundColor: AppColors.lightBg,
                             child: CircleAvatar(
+                              backgroundColor: AppColors.accentColor,
                               radius: 60,
-                              backgroundImage: (_imagePath != null)
-                                  ? FileImage(File(_imagePath!))
-                                      as ImageProvider
-                                  : const AssetImage('assets/images/doc.png'),
+                              backgroundImage: (file != null)
+                                  ? FileImage(file!) as ImageProvider
+                                  : const AssetImage('assets/doc.png'),
                             ),
                           ),
                           GestureDetector(
@@ -124,7 +131,6 @@ class _DoctorRegistrationViewState extends State<DoctorRegistrationView> {
                               child: const Icon(
                                 Icons.camera_alt_rounded,
                                 size: 20,
-                                // color: AppColors.color1,
                               ),
                             ),
                           ),
@@ -134,57 +140,40 @@ class _DoctorRegistrationViewState extends State<DoctorRegistrationView> {
                         padding: const EdgeInsets.fromLTRB(8, 12, 8, 8),
                         child: Row(
                           children: [
-                            Text(
-                              'التخصص',
-                              style: getBodyStyle(color: AppColors.black),
-                            )
+                            //-------------------------------------------التخصص
+                            DoctorText(text: "التخصص"),
                           ],
                         ),
                       ),
-                      // التخصص---------------
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 5),
-                        decoration: BoxDecoration(
-                            color: AppColors.accentColor,
-                            borderRadius: BorderRadius.circular(20)),
-                        child: DropdownButton(
-                          isExpanded: true,
-                          iconEnabledColor: AppColors.color1,
-                          icon: const Icon(Icons.expand_circle_down_outlined),
-                          value: _specialization,
-                          onChanged: (String? newValue) {
-                            setState(() {
-                              _specialization = newValue ?? specialization[0];
-                            });
-                          },
-                          items: specialization.map((String value) {
-                            return DropdownMenuItem(
-                              value: value,
-                              child: Text(value),
-                            );
-                          }).toList(),
-                        ),
+                      DoctorDropDownList(
+                        value: _specialization,
+                        onChanged: (dynamic newValue) {
+                          setState(() {
+                            _specialization = newValue ?? specialization[0];
+                          });
+                        },
+                        items: specialization.map((String value) {
+                          return DropdownMenuItem(
+                            value: value,
+                            child: Text(value),
+                          );
+                        }).toList(),
                       ),
+
+                      //-------------------------------------------النبذة التعريفية
                       Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: Row(
                           children: [
-                            Text(
-                              'نبذة تعريفية',
-                              style: getBodyStyle(color: AppColors.black),
-                            )
+                            DoctorText(text: 'نبذة تعريفية'),
                           ],
                         ),
                       ),
-                      TextFormField(
-                        keyboardType: TextInputType.text,
-                        maxLines: 5,
-                        controller: _bio,
-                        style: TextStyle(color: AppColors.black),
-                        decoration: const InputDecoration(
-                            hintText:
-                                'سجل المعلومات الطبية العامة مثل تعليمك الأكاديمي وخبراتك السابقة...'),
+
+                      DoctorContainer(
+                        bioController: _bio,
+                        hinttext:
+                            'سجل المعلومات الطبية العامة مثل تعليمك الأكاديمي وخبراتك السابقة...',
                         validator: (value) {
                           if (value!.isEmpty) {
                             return 'من فضلك ادخل النبذة التعريفية';
@@ -192,29 +181,21 @@ class _DoctorRegistrationViewState extends State<DoctorRegistrationView> {
                             return null;
                           }
                         },
+                        maxlines: 5,
                       ),
-                      const Padding(
-                        padding: EdgeInsets.only(top: 8.0),
-                        child: Divider(),
-                      ),
+
+                      //-------------------------------------------عنوان العيادة
                       Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: Row(
                           children: [
-                            Text(
-                              'عنوان العيادة',
-                              style: getBodyStyle(color: AppColors.black),
-                            )
+                            DoctorText(text: 'عنوان العيادة'),
                           ],
                         ),
                       ),
-                      TextFormField(
-                        keyboardType: TextInputType.text,
-                        controller: _address,
-                        style: TextStyle(color: AppColors.black),
-                        decoration: const InputDecoration(
-                          hintText: '5 شارع مصدق - الدقي - الجيزة',
-                        ),
+                      DoctorContainer(
+                        bioController: _address,
+                        hinttext: ' شارع ابي رضا المقري - الرياض - الرياض',
                         validator: (value) {
                           if (value!.isEmpty) {
                             return 'من فضلك ادخل عنوان العيادة';
@@ -223,6 +204,8 @@ class _DoctorRegistrationViewState extends State<DoctorRegistrationView> {
                           }
                         },
                       ),
+
+                      //------------------------------------------- ساعات العمل
                       Row(
                         children: [
                           Expanded(
@@ -230,10 +213,7 @@ class _DoctorRegistrationViewState extends State<DoctorRegistrationView> {
                               padding: const EdgeInsets.all(8.0),
                               child: Row(
                                 children: [
-                                  Text(
-                                    'ساعات العمل من',
-                                    style: getBodyStyle(color: AppColors.black),
-                                  )
+                                  DoctorText(text: 'ساعات العمل من'),
                                 ],
                               ),
                             ),
@@ -243,10 +223,7 @@ class _DoctorRegistrationViewState extends State<DoctorRegistrationView> {
                               padding: const EdgeInsets.all(8.0),
                               child: Row(
                                 children: [
-                                  Text(
-                                    'الي',
-                                    style: getBodyStyle(color: AppColors.black),
-                                  )
+                                  DoctorText(text: 'الي'),
                                 ],
                               ),
                             ),
@@ -255,42 +232,36 @@ class _DoctorRegistrationViewState extends State<DoctorRegistrationView> {
                       ),
                       Row(
                         children: [
-                          // ---------- Start Time ----------------
+                          //  Start Time
                           Expanded(
-                            child: TextFormField(
-                              readOnly: true,
-                              decoration: InputDecoration(
-                                suffixIcon: IconButton(
-                                    onPressed: () async {
-                                      await showStartTimePicker();
-                                    },
-                                    icon: Icon(
-                                      Icons.watch_later_outlined,
-                                      color: AppColors.color1,
-                                    )),
-                                hintText: _startTime,
-                              ),
+                            child: DoctorContainer(
+                              hinttext: _startTime,
+                              suffixIcon: IconButton(
+                                  onPressed: () async {
+                                    await showStartTimePicker();
+                                  },
+                                  icon: const Icon(
+                                    Icons.watch_later_outlined,
+                                    color: AppColors.color1,
+                                  )),
                             ),
                           ),
                           const SizedBox(
                             width: 10,
                           ),
 
-                          // ---------- End Time ----------------
+                          //  End Time
                           Expanded(
-                            child: TextFormField(
-                              readOnly: true,
-                              decoration: InputDecoration(
-                                suffixIcon: IconButton(
-                                    onPressed: () async {
-                                      await showEndTimePicker();
-                                    },
-                                    icon: Icon(
-                                      Icons.watch_later_outlined,
-                                      color: AppColors.color1,
-                                    )),
-                                hintText: _endTime,
-                              ),
+                            child: DoctorContainer(
+                              hinttext: _endTime,
+                              suffixIcon: IconButton(
+                                  onPressed: () async {
+                                    await showStartTimePicker();
+                                  },
+                                  icon: const Icon(
+                                    Icons.watch_later_outlined,
+                                    color: AppColors.color1,
+                                  )),
                             ),
                           ),
                         ],
@@ -299,20 +270,19 @@ class _DoctorRegistrationViewState extends State<DoctorRegistrationView> {
                         padding: const EdgeInsets.all(8.0),
                         child: Row(
                           children: [
-                            Text(
-                              'رقم الهاتف 1',
-                              style: getBodyStyle(color: AppColors.black),
-                            )
+                            DoctorText(text: 'رقم الهاتف 1'),
                           ],
                         ),
                       ),
-                      TextFormField(
-                        keyboardType: TextInputType.text,
-                        controller: _phone1,
-                        style: TextStyle(color: AppColors.black),
-                        decoration: const InputDecoration(
-                          hintText: '+20xxxxxxxxxx',
-                        ),
+                      DoctorContainer(
+                        bioController: _phone1,
+                        hinttext: '20xxxxxxxxxx+',
+                        keyboardType: TextInputType.phone,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          //FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+                          LengthLimitingTextInputFormatter(12),
+                        ],
                         validator: (value) {
                           if (value!.isEmpty) {
                             return 'من فضلك ادخل الرقم';
@@ -321,24 +291,31 @@ class _DoctorRegistrationViewState extends State<DoctorRegistrationView> {
                           }
                         },
                       ),
+
                       Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: Row(
                           children: [
-                            Text(
-                              'رقم الهاتف 2 (اختياري)',
-                              style: getBodyStyle(color: AppColors.black),
-                            )
+                            DoctorText(text: 'رقم الهاتف 2 (اختياري)'),
                           ],
                         ),
                       ),
-                      TextFormField(
-                        keyboardType: TextInputType.text,
-                        controller: _phone2,
-                        style: TextStyle(color: AppColors.black),
-                        decoration: const InputDecoration(
-                          hintText: '+20xxxxxxxxxx',
-                        ),
+                      DoctorContainer(
+                        bioController: _phone2,
+                        hinttext: '20xxxxxxxxxx+',
+                        keyboardType: TextInputType.phone,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          //FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+                          LengthLimitingTextInputFormatter(12),
+                        ],
+                        validator: (value) {
+                          if (value!.isEmpty) {
+                            return 'من فضلك ادخل الرقم';
+                          } else {
+                            return null;
+                          }
+                        },
                       ),
                     ],
                   ),
@@ -347,49 +324,31 @@ class _DoctorRegistrationViewState extends State<DoctorRegistrationView> {
             ),
           ),
         ),
-        bottomNavigationBar: Container(
-          margin: const EdgeInsets.all(10),
-          padding: const EdgeInsets.only(top: 25.0),
-          child: SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton(
-              onPressed: () async {
-                if (_formKey.currentState!.validate() && file != null) {
-                  profileUrl = await uploadImageToFireStore(file!);
-                  context.read<AuthBloc>().add(UpdateDoctorDataEvent(//DoctorRegistrationEvent
-                          doctorModel: DoctorModel(
-                        uid: userID,
-                        image: profileUrl,
-                        phone1: _phone1.text,
-                        phone2: _phone2.text,
-                        address: _address.text,
-                        specialization: _specialization,
-                        openHour: _startTime,
-                        closeHour: _endTime,
-                        bio: _bio.text,
-                      )));
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('من فضلك قم بتحميل صورة العيادة'),
-                    ),
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.color1,
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+        bottomNavigationBar: DoctorRegisterButton(
+          text: 'تسجيل',
+          onPressed: () async {
+            if (_formKey.currentState!.validate() && file != null) {
+              profileUrl = await uploadImageToFirebaseStorage(file!);
+              context.read<AuthBloc>().add(UpdateDoctorDataEvent(
+                      doctorModel: DoctorModel(
+                    uid: userID ?? '',
+                    image: profileUrl ?? '',
+                    phone1: _phone1.text,
+                    phone2: _phone2.text,
+                    address: _address.text,
+                    specialization: _specialization,
+                    openHour: _startTime,
+                    closeHour: _endTime,
+                    bio: _bio.text,
+                  )));
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('من فضلك قم بتحميل صورة الملف الشخصي'),
                 ),
-              ),
-              child: Text(
-                "التسجيل",
-                style: getTitleStyle(fontSize: 16, color: AppColors.white),
-              ),
-            ),
-          ),
+              );
+            }
+          },
         ),
       ),
     );

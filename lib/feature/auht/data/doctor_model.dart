@@ -1,63 +1,60 @@
+// feature/auth/login/data/doctor_model.dart
+
 class DoctorModel {
+  String? uid;
   String? name;
-  String? image;
-  String? specialization;
-  int? rating;
   String? email;
   String? phone1;
   String? phone2;
-  String? bio;
+  String? address;
+  String? specialization;
   String? openHour;
   String? closeHour;
-  String? address;
-  String? uid;
-
+  String? bio;
+  String? image;
+  dynamic? rating;
   DoctorModel({
+    this.uid,
     this.name,
-    this.image,
-    this.specialization,
-    this.rating,
     this.email,
     this.phone1,
     this.phone2,
-    this.bio,
+    this.address,
+    this.specialization,
     this.openHour,
     this.closeHour,
-    this.address,
-    this.uid,
+    this.bio,
+    this.image,
+    this.rating,
   });
 
-  factory DoctorModel.fromJson(Map<String, dynamic> json) {
-    return DoctorModel(
-      name: json['name'],
-      image: json['image'],
-      specialization: json['specialization'],
-      rating: json['rating'],
-      email: json['email'],
-      phone1: json['phone1'],
-      phone2: json['phone2'],
-      bio: json['bio'],
-      openHour: json['openHour'],
-      closeHour: json['closeHour'],
-      address: json['address'],
-      uid: json['uid'],
-    );
+  DoctorModel.fromJson(Map<String, dynamic> json) {
+    name = json['name'];
+    email = json['email'];
+    phone1 = json['phone1'];
+    phone2 = json['phone2'];
+    address = json['address'];
+    specialization = json['specialization'];
+    openHour = json['openHour'];
+    closeHour = json['closeHour'];
+    bio = json['bio'];
+    image = json['image'];
+    rating = json['rating'];
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      if (name != null) 'name': name,
-      if (image != null) 'image': image,
-      if (specialization != null) 'specialization': specialization,
-      if (rating != null) 'rating': rating,
-      if (email != null) 'email': email,
-      if (phone1 != null) 'phone1': phone1,
-      if (phone2 != null) 'phone2': phone2,
-      if (bio != null) 'bio': bio,
-      if (openHour != null) 'openHour': openHour,
-      if (closeHour != null) 'closeHour': closeHour,
-      if (address != null) 'address': address,
-      if (uid != null) 'uid': uid,
-    };
+    final Map<String, dynamic> data = <String, dynamic>{};
+    if (name != null) data['name'] = name;
+    if (email != null) data['email'] = email;
+    if (rating != null) data['rating'] = rating;
+    if (phone1 != null) data['phone1'] = phone1;
+    if (phone2 != null) data['phone2'] = phone2;
+    if (address != null) data['address'] = address;
+    if (specialization != null) data['specialization'] = specialization;
+    if (openHour != null) data['openHour'] = openHour;
+    if (closeHour != null) data['closeHour'] = closeHour;
+    if (bio != null) data['bio'] = bio;
+    if (image != null) data['image'] = image;
+    return data;
   }
 }

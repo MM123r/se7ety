@@ -1,14 +1,14 @@
-import 'package:se7ety_123/feature/auht/data/doctor_model.dart';
+// feature/auth/login/presentation/bloc/auth_event.dart
+part of 'auth_bloc.dart';
 
-class AuthEvent {}
+@immutable
+sealed class AuthEvent {}
 
-// register
 class RegisterEvent extends AuthEvent {
   final String email;
   final String password;
   final String name;
-  final String userType;
-
+  final UserType userType;
   RegisterEvent(
       {required this.email,
       required this.password,
@@ -16,21 +16,14 @@ class RegisterEvent extends AuthEvent {
       required this.userType});
 }
 
-// login
-class LoginEvent extends AuthEvent {
+class loginEvent extends AuthEvent {
   final String email;
   final String password;
-  final String userType;
-
-  LoginEvent(
-      {required this.email, required this.password, required this.userType});
+  loginEvent({required this.email, required this.password});
 }
 
-// DoctorRegistion
+//update doctor profile
 class UpdateDoctorDataEvent extends AuthEvent {
   final DoctorModel doctorModel;
-
-  UpdateDoctorDataEvent({
-    required this.doctorModel,
-  });
+  UpdateDoctorDataEvent({required this.doctorModel});
 }

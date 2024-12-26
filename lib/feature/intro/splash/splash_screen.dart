@@ -6,7 +6,7 @@ import 'package:se7ety_123/core/services/local_storage.dart';
 import 'package:se7ety_123/core/utils/colors.dart';
 import 'package:se7ety_123/feature/intro/onboarding/page/onboarding_screen.dart';
 import 'package:se7ety_123/feature/intro/welcome/welcome_screen.dart';
-import 'package:se7ety_123/feature/patient/nav_bar.dart';
+import 'package:se7ety_123/feature/patient/nav_bar/nav_bar_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -34,10 +34,10 @@ class _SplashScreenState extends State<SplashScreen> {
 
       if(user !=null){
        if( user?.photoURL == UserType.doctor.toString()){
-        //
+        // pushReplacement(context, const DoctorHomeReg());
        }
        else{
-          pushReplacement(context, const PatientNavBarWidget());
+          pushReplacement(context, const NavBarScreen());
        }
       }else{
          if (isOnboardingShown) {

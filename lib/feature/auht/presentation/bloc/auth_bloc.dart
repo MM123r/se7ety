@@ -1,118 +1,113 @@
-import 'dart:developer';
-
+// feature/auth/login/presentation/bloc/auth_bloc.dart
+import 'package:bloc/bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:meta/meta.dart';
 import 'package:se7ety_123/core/enums/user_type_enum.dart';
-import 'package:se7ety_123/feature/auht/presentation/bloc/auth_event.dart';
-import 'package:se7ety_123/feature/auht/presentation/bloc/auth_state.dart';
+import 'package:se7ety_123/feature/auht/data/doctor_model.dart';
+
+part 'auth_event.dart';
+part 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   AuthBloc() : super(AuthInitial()) {
     on<RegisterEvent>(register);
-    on<LoginEvent>(login);
-    on<UpdateDoctorDataEvent>(updateDoctorData);
+    on<loginEvent>(login);
+    on<UpdateDoctorDataEvent>(updateDoctorProfile);
   }
 
-// Login
-  Future<void> login(LoginEvent event, Emitter<AuthState> emit) async {
-    emit(LoginLoadingState());
-    try {
-      var credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: event.email, password: event.password);
-
-      credential.user?.photoURL;
-
-      emit(LoginSuccessState(userType: credential.user?.photoURL ?? ""));
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'user-not-found') {
-        emit(AuhtErrorState(message: "المستخدم غير موجود"));
-      } else if (e.code == 'wrong-password') {
-        emit(AuhtErrorState(message: "الباسورد ضعيف"));
-      } else {
-        emit(AuhtErrorState(message: "حدث مشكله ما حاول مره اخري "));
-      }
-    } catch (e) {
-      emit(AuhtErrorState(message: "حدث مشكله ما حاول مره اخري "));
-    }
-  }
-
-  ///////////////////////
-
-// Register
-  Future<void> register(RegisterEvent event, Emitter<AuthState> emit) async {
-    emit(RegisterLoadingState());
-
+//register
+  static Future<void> register(
+      RegisterEvent event, Emitter<AuthState> emit) async {
+    emit(RegisterLoadingstate());
     try {
       final credential =
           await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: event.email,
         password: event.password,
       );
-      //
       User? user = credential.user;
+      user?.uid;
       await user?.updateDisplayName(event.name);
-
-      // use photo as a user role
       await user?.updatePhotoURL(event.userType.toString());
-
-      // store on firestore
+      //firestore
       if (event.userType == UserType.doctor) {
-        FirebaseFirestore.instance.collection("doctors").doc(user?.uid).set({
+        FirebaseFirestore.instance.collection('doctors').doc(user?.uid).set({
           'name': event.name,
+          'email': event.email,
+          'password': event.password,
           'image': '',
           'specialization': '',
-          'rating': 3,
-          'email': event.email,
+          'rating': '',
           'phone1': '',
           'phone2': '',
           'bio': '',
           'openHour': '',
           'closeHour': '',
+          'uid': user?.uid,
+          'address': '',
+        });
+      } else {
+        FirebaseFirestore.instance.collection('patients').doc(user?.uid).set({
+          'name': event.name,
+          'email': event.email,
+          'image': '',
+          'age': '',
+          'phone': '',
+          'bio': '',
           'address': '',
           'uid': user?.uid,
         });
-      } else {
-        FirebaseFirestore.instance.collection("patient").doc(user?.uid).set({
-          'name': event.name,
-          'image': '',
-          'age': '',
-          'email': event.email,
-          'phone': '',
-          'bio': '',
-          'city': '',
-          'uid': user?.uid,
-        });
       }
 
-      emit(RegisterSuccessState());
+      print(user?.uid);
+      emit(RegisterSuccessstate());
     } on FirebaseAuthException catch (e) {
       if (e.code == 'weak-password') {
-        emit(AuhtErrorState(message: "الباسورد ضعيف"));
+        emit(AuthErrorState(error: 'الباسورد ضعيف'));
       } else if (e.code == 'email-already-in-use') {
-        emit(AuhtErrorState(message: "لاميل مستخدم من قيل"));
+        emit(AuthErrorState(error: 'البريد الالكتروني مستخدم بالفعل'));
       } else {
-        emit(AuhtErrorState(message: "حدث مشكله ما حاول مره اخري "));
+        emit(AuthErrorState(error: 'حدث خطأ ما'));
       }
     } catch (e) {
-      emit(AuhtErrorState(message: "حدث مشكله ما حاول مره اخري "));
+      emit(AuthErrorState(error: 'حدث خطأ ما'));
     }
   }
 
-  Future<void> updateDoctorData(
-      UpdateDoctorDataEvent event, Emitter<AuthState> emit) async {
-    emit(DoctorRegistionLoadingState());
+//login
+  static Future<void> login(loginEvent event, Emitter<AuthState> emit) async {
+    emit(LoginLoadingstate());
     try {
-      log("-------1-----");
+      var credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: event.email,
+        password: event.password,
+      );
+
+      emit(LoginSuccessstate(userType: credential.user!.photoURL ?? ""));
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found') {
+        emit(AuthErrorState(error: 'البريد الالكتروني غير موجود'));
+      } else if (e.code == 'wrong-password') {
+        emit(AuthErrorState(error: 'الباسورد غير صحيح'));
+      } else {
+        emit(AuthErrorState(error: 'حدث خطأ ما'));
+      }
+    }
+  }
+
+  //update doctor profile
+  static Future<void> updateDoctorProfile(
+      UpdateDoctorDataEvent event, Emitter<AuthState> emit) async {
+    emit(DoctorRegisterationLoadingstate());
+    try {
       await FirebaseFirestore.instance
-          .collection("doctors")
+          .collection('doctors')
           .doc(event.doctorModel.uid)
           .update(event.doctorModel.toJson());
-          log("-------2-----");
-      emit(DoctorRegistionSuccessState());
+      emit(DoctorRegisterationSuccessstate());
     } catch (e) {
-      log("-------3-----");
-      emit(AuhtErrorState(message: "حدث خطا ما يرجي محاوله مرة اخري"));
+      emit(AuthErrorState(error: 'حدث خطأ ما'));
     }
   }
 }
